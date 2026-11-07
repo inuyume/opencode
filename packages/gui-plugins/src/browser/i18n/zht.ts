@@ -1,6 +1,9 @@
 export default {
   "command.open": "開啟瀏覽器",
   "command.reload": "重新載入瀏覽器頁面",
+  "command.inspect": "在瀏覽器頁面中選取元素",
+  "command.address": "聚焦瀏覽器位址",
+  "home.recent": "最近使用",
   "tab.title": "瀏覽器",
   "address.label": "瀏覽器位址",
   "action.stop": "停止",

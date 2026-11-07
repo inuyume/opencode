@@ -3,8 +3,8 @@ import { Icon } from "@opencode/ui/icon"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Keybind } from "@opencode/ui/keybind"
 import { Tooltip } from "@opencode/ui/tooltip"
-import { createSignal, onCleanup, Show, Suspense, untrack, type Component } from "solid-js"
-import { Command, createKeyed, usePlugin, type MountedSession } from "@opencode/plugin/gui"
+import { createSignal, onCleanup, onMount, Show, Suspense, untrack, type Component } from "solid-js"
+import { createKeyed, usePlugin, type MountedSession } from "@opencode/plugin/gui"
 import type { DetailsPanelProps } from "./panel"
 import {
   detailsPopoverFocusesContent,
@@ -17,8 +17,22 @@ import {
 } from "./popover-machine"
 import type { McpControllers } from "./server-panel"
 
-/** Every mounted details popover, so a shortcut finds the one on screen. */
-export type DetailsMenus = Set<{ trigger: () => HTMLButtonElement | undefined; toggle: () => void }>
+/** One mounted details popover, so the plugin's command finds the one on screen. */
+export type DetailsMenu = {
+  /** Its timeline is the one on screen. */
+  active: () => boolean
+  /** Whether its trigger is attached, including cached timelines being reinserted. */
+  connected: () => boolean
+  /** Opens or closes it. */
+  toggle: () => void
+}
+
+/** Every mounted details popover, with membership changes the command follows. */
+export type DetailsMenus = {
+  entries: () => readonly DetailsMenu[]
+  add: (menu: DetailsMenu) => void
+  remove: (menu: DetailsMenu) => void
+}
 
 type DetailsProps = {
   menus: DetailsMenus
@@ -50,7 +64,8 @@ function DetailsPopover(props: DetailsProps) {
   const [popoverState, setPopoverState] = createSignal<DetailsPopoverState>(initialDetailsPopoverState)
   const open = () => detailsPopoverOpen(popoverState())
 
-  let trigger: HTMLButtonElement | undefined
+  const [trigger, setTrigger] = createSignal<HTMLButtonElement>()
+  const [connected, setConnected] = createSignal(false)
   let content: HTMLDivElement | undefined
   let focusTimer: ReturnType<typeof setTimeout> | undefined
   // The trigger's latest click, which Kobalte reports just before it toggles the popover: a click without a pointer
@@ -84,32 +99,36 @@ function DetailsPopover(props: DetailsProps) {
     () => onCleanup(() => dispatch({ type: "closed" })),
   )
 
-  // Cached timelines remain mounted; only the visible details own the command. It leaves with this component.
-  // A shortcut opens the popover without clicking its trigger.
-  const self = {
-    trigger: () => trigger,
+  // Cached timelines become active before their DOM is reinserted. Follow that insertion instead of caching
+  // isConnected during the active change; only the active header needs to observe the document.
+  createKeyed(
+    () => (props.active ? trigger() : undefined),
+    (element) => {
+      const read = () => setConnected(element.isConnected)
+      const observer = new MutationObserver(read)
+      observer.observe(document.body, { childList: true, subtree: true })
+      read()
+      onCleanup(() => {
+        observer.disconnect()
+        setConnected(false)
+      })
+    },
+  )
+
+  // Cached timelines remain mounted; only the visible details own the command. The plugin's setup selects the menu
+  // whose timeline is active and whose trigger is on screen.
+  const self: DetailsMenu = {
+    active: () => props.active,
+    connected,
     toggle: () => dispatch({ type: "toggled", via: "keyboard" }),
   }
 
-  props.menus.add(self)
+  // Refs run before insertion; publish only once the trigger is connected so enabled is computed after mounting.
+  onMount(() => props.menus.add(self))
   onCleanup(() => {
-    props.menus.delete(self)
+    props.menus.remove(self)
     dispatch({ type: "disposed" })
   })
-
-  ctx.add(Command, (): Command | undefined =>
-    props.active
-      ? {
-          id: "toggle",
-          title: ctx.t("command.toggle"),
-          group: ctx.t("command.category.view"),
-          section: "session",
-          bind: "mod+shift+y",
-          // A detached timeline can stay active, so the shortcut toggles the popover whose trigger is on screen.
-          run: () => [...props.menus].find((menu) => menu.trigger()?.isConnected)?.toggle(),
-        }
-      : undefined,
-  )
 
   const keybind = () => [...keybinds.keybind(`${ctx.id}.toggle`)]
 
@@ -134,7 +153,7 @@ function DetailsPopover(props: DetailsProps) {
         }
       >
         <Popover.Trigger
-          ref={trigger}
+          ref={setTrigger}
           as={IconButton}
           icon={<Icon name="window-analytics" />}
           variant="ghost-muted"

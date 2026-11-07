@@ -1,5 +1,6 @@
 export default {
   "command.toggle": "切換偵錯列",
+  "command.heap": "擷取堆積快照",
   providerAriaLabel: "提供者效能診斷",
   na: "不適用",
   "duration.label": "TIME",

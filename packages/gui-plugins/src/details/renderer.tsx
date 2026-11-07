@@ -1,7 +1,7 @@
-import { lazy, onCleanup, Show, Suspense } from "solid-js"
-import { Panel, Slot, Style, usePanel, type Plugin } from "@opencode/plugin/gui"
+import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js"
+import { Command, Panel, Slot, Style, usePanel, type Plugin } from "@opencode/plugin/gui"
 import type Details from "./index"
-import { DetailsHeader, type DetailsMenus } from "./popover"
+import { DetailsHeader, type DetailsMenu, type DetailsMenus } from "./popover"
 import { BuiltinSlot, onIdle } from "@opencode/plugin/gui/builtin"
 import type { McpControllers } from "./server-panel"
 import type { WorkspaceMoveControllers } from "./workspace-menu"
@@ -9,7 +9,32 @@ import type { WorkspaceMoveControllers } from "./workspace-menu"
 const setup: Plugin.Setup<typeof Details> = (ctx) => {
   const sessions = ctx.sessions
 
-  const menus: DetailsMenus = new Set()
+  // Every mounted popover reports itself here, so the command can follow which timeline is on screen.
+  const [menuEntries, setMenuEntries] = createSignal<readonly DetailsMenu[]>([])
+
+  const menus: DetailsMenus = {
+    entries: menuEntries,
+    add: (menu) => setMenuEntries((current) => [...current, menu]),
+    remove: (menu) => setMenuEntries((current) => current.filter((item) => item !== menu)),
+  }
+
+  // The visible popover whose trigger is mounted. A detached timeline can stay active, so the trigger must be on
+  // screen too; the last entry wins when two timelines briefly overlap.
+  const currentMenu = () => menus.entries().findLast((menu) => menu.active() && menu.connected())
+
+  // Contributed continuously, so Settings > Shortcuts can refresh its remembered title while no timeline is active.
+  ctx.add(
+    Command,
+    (): Command => ({
+      id: "toggle",
+      title: ctx.t("command.toggle"),
+      group: ctx.t("command.category.view"),
+      section: "session",
+      bind: "mod+shift+y",
+      enabled: !!currentMenu(),
+      run: () => currentMenu()?.toggle(),
+    }),
+  )
   // MCP toggles and error dialogs outlive the popover or drawer that started them.
   const mcp: McpControllers = new Map()
   // Moves and their recovery dialogs outlive the location menu, which closes when the user picks a destination.

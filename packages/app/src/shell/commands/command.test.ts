@@ -20,6 +20,14 @@ test("command catalog persistence validates metadata and omits executable fields
     open: { title: "Open", keybind: "mod+o", hidden: false, onSelect: "invalid" },
     shell: { title: "Terminal", section: "terminal" },
     stale: { title: "Stale", section: "removed" },
+    labeled: {
+      title: "Undo",
+      titleLabel: { key: "command.session.undo", params: { count: 2, name: "x", enabled: true } },
+      unknown: "field",
+    },
+    legacy: { title: "Redo" },
+    invalid: { title: "Keep title", titleLabel: { key: 1 } },
+    partial: { title: "Keep key", titleLabel: { key: "command.session.redo", params: { count: [] } } },
     "acme.open": { plugin: "acme", title: "Open Acme" },
   })
 
@@ -27,6 +35,13 @@ test("command catalog persistence validates metadata and omits executable fields
     open: { title: "Open", keybind: "mod+o", hidden: false },
     shell: { title: "Terminal", section: "terminal" },
     stale: { title: "Stale" },
+    labeled: {
+      title: "Undo",
+      titleLabel: { key: "command.session.undo", params: { count: 2, name: "x", enabled: true } },
+    },
+    legacy: { title: "Redo" },
+    invalid: { title: "Keep title" },
+    partial: { title: "Keep key", titleLabel: { key: "command.session.redo" } },
     "acme.open": { plugin: "acme", title: "Open Acme" },
   })
   expect(decode({})).toEqual({})

@@ -90,6 +90,25 @@ test("the location shortcuts choose worktrees from every state and keep cycling"
   await page.getByRole("option", { name: /^quiet-river / }).click()
   await expect(path).toHaveText(existing)
   await expect(view.editor).toBeFocused()
+
+  // The draft-owned title must follow the locale even after its screen no longer owns a command registration.
+  await page.goto("/settings?tab=shortcuts")
+  const settings = page.getByTestId("settings-screen")
+  const row = settings.locator('[data-keybind-id="session.location.select"]').locator("..").locator("..")
+  await expect(row).toContainText("Choose worktree")
+
+  for (const locale of [
+    { option: "简体中文", title: "选择工作树", lang: "zh-Hans", preferences: "Preferences", shortcuts: "快捷键" },
+    { option: "繁體中文", title: "選擇工作樹", lang: "zh-Hant", preferences: "偏好设置", shortcuts: "快速鍵" },
+    { option: "English", title: "Choose worktree", lang: "en", preferences: "偏好設定", shortcuts: "Shortcuts" },
+  ]) {
+    await settings.getByRole("tab", { name: locale.preferences, exact: true }).click()
+    await settings.locator('[data-action="settings-language"]').click()
+    await page.getByRole("option", { name: locale.option, exact: true }).click()
+    await expect(page.locator("html")).toHaveAttribute("lang", locale.lang)
+    await settings.getByRole("tab", { name: locale.shortcuts, exact: true }).click()
+    await expect(row).toContainText(locale.title)
+  }
 })
 
 test("Local shows and targets the main checkout when the draft opened in a worktree", async ({ page }) => {

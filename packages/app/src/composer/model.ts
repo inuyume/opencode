@@ -570,6 +570,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     {
       id: "file.attach",
       title: language.t("prompt.action.attachFile"),
+      titleLabel: { key: "prompt.action.attachFile" },
       category: language.t("command.category.file"),
       keybind: "mod+u",
       editable: true,
@@ -579,6 +580,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     {
       id: "prompt.mode.toggle",
       title: language.t("command.prompt.mode.toggle"),
+      titleLabel: { key: "command.prompt.mode.toggle" },
       category: language.t("command.category.session"),
       keybind: "mod+shift+x",
       onSelect: () => void controller.dispatch({ type: mode() === "normal" ? "mode.shell" : "mode.normal" }),
@@ -586,6 +588,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     {
       id: "prompt.mode.shell",
       title: language.t("command.prompt.mode.shell"),
+      titleLabel: { key: "command.prompt.mode.shell" },
       category: language.t("command.category.session"),
       disabled: mode() === "shell",
       onSelect: () => void controller.dispatch({ type: "mode.shell" }),
@@ -593,6 +596,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     {
       id: "prompt.mode.normal",
       title: language.t("command.prompt.mode.normal"),
+      titleLabel: { key: "command.prompt.mode.normal" },
       category: language.t("command.category.session"),
       disabled: mode() === "normal",
       onSelect: () => void controller.dispatch({ type: "mode.normal" }),

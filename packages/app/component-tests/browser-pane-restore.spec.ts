@@ -66,6 +66,7 @@ story.beforeEach(async ({ mount, page }) => {
     const closedTabs = closed.createClosedTabs()
     mountBrowserRegion({
       LanguageProvider: language.LanguageProvider,
+      sdk,
       PluginHostProvider: host.PluginHostProvider,
       usePluginHost: host.usePluginHost,
       createRegion: (region: Omit<Parameters<typeof panels.createRegion>[0], "closed" | "open">) =>
@@ -488,6 +489,34 @@ story("keeps ⌘T in the browser pane after a click on its loading surface", asy
   await expect(root.getByTestId("browser-opens")).toHaveText("1")
   await expect(root.getByTestId("side-new-tab")).toHaveText("none")
   await expect(root.getByTestId("new-sessions")).toHaveText("0")
+})
+
+story("keeps the visible browser commands registered while the pane is not open", async ({ page }) => {
+  const root = page.getByTestId("browser-region-fixture")
+  const commands = root.getByTestId("browser-commands")
+  const mod = (await page.evaluate(() => /Mac|iPhone|iPad|iPod/.test(navigator.platform))) ? "Meta" : "Control"
+
+  // Alpha shows a file tab, so no browser pane is mounted. Settings still lists these commands, disabled.
+  await expect(root.getByText("Registrations: 1", { exact: true })).toBeVisible()
+  await expect(commands).toContainText("reload:off")
+  await expect(commands).toContainText("address:off")
+  await expect(commands).toContainText("inspect:off")
+
+  // Beta's browser tab mounts the pane, which enables them.
+  await root.getByRole("button", { name: "Beta", exact: true }).click()
+  await expect(root.getByText("Registrations: 2", { exact: true })).toBeVisible()
+  await root.getByRole("button", { name: "First inventory", exact: true }).click()
+  await expect(root.getByTestId("selected")).toHaveText(/^browser:/)
+  await expect(commands).toContainText("reload:on")
+  await expect(commands).toContainText("address:on")
+  await expect(commands).toContainText("inspect:on")
+
+  // Selecting Beta's file tab unmounts the pane; the commands stay registered and turn disabled again.
+  await page.locator("#review-panel").press(`${mod}+1`)
+  await expect(root.getByTestId("selected")).toHaveText("file://beta.ts")
+  await expect(commands).toContainText("reload:off")
+  await expect(commands).toContainText("address:off")
+  await expect(commands).toContainText("inspect:off")
 })
 
 story("reloads the browser tab with ⌘R inside the pane and leaves it to the window elsewhere", async ({ page }) => {

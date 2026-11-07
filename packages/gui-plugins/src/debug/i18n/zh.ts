@@ -1,5 +1,6 @@
 export default {
   "command.toggle": "切换调试栏",
+  "command.heap": "捕获堆快照",
   providerAriaLabel: "提供商性能诊断",
   na: "不适用",
   "duration.label": "TIME",

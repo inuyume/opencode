@@ -5,7 +5,7 @@ import { createStore, produce, reconcile } from "solid-js/store"
 import { Predicate, Schema } from "effect"
 import { Persistence } from "@/runtime/persistence/schema"
 import { makeEventListener } from "@solid-primitives/event-listener"
-import { useLanguage } from "@/runtime/i18n/language"
+import { useLanguage, type AppTranslationKey } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
 import { keybindRenames } from "@/settings/keybinds/migration"
 import en from "@/runtime/i18n/en"
@@ -109,11 +109,21 @@ export const CommandSection = Schema.Literals(["general", "session", "navigation
 
 export type CommandSection = typeof CommandSection.Type
 
+type TitleLabelKey = AppTranslationKey
+
+/** The app dictionary source of a remembered command title, resolved again whenever the language changes. */
+export type CommandTitleLabel = {
+  key: TitleLabelKey
+  params?: Record<string, string | number | boolean>
+}
+
 export interface CommandOption {
   id: string
   /** The GUI plugin that contributes the command. Settings > Shortcuts lists it only while that plugin is installed. */
   plugin?: string
   title: string
+  /** For a command that leaves its route: Settings > Shortcuts translates this instead of the stored title. */
+  titleLabel?: CommandTitleLabel
   description?: string
   /** Extra words the command palette matches, separated by spaces. */
   keywords?: string
@@ -182,9 +192,17 @@ export function resolveKeybindOption(candidates: CommandOption[] | undefined, ev
 
 export type CommandSource = "palette" | "keybind" | "slash"
 
+const CommandTitleLabelSchema = Persistence.struct({
+  key: Schema.String,
+  params: Persistence.optional(
+    Schema.Record(Schema.String, Schema.Union([Schema.String, Schema.Finite, Schema.Boolean])),
+  ),
+})
+
 const CommandCatalogItem = Persistence.struct({
   plugin: Schema.optional(Schema.String),
   title: Schema.String,
+  titleLabel: Persistence.optional(CommandTitleLabelSchema),
   description: Schema.optional(Schema.String),
   category: Schema.optional(Schema.String),
   section: Persistence.optional(CommandSection),
@@ -440,6 +458,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
             reconcile({
               plugin: opt.plugin,
               title: opt.title,
+              titleLabel: opt.titleLabel,
               description: opt.description,
               category: opt.category,
               section: opt.section,
@@ -461,7 +480,28 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
       if (stale.length) setCatalog(produce((draft) => stale.forEach((id) => delete draft[id])))
     })
 
-    const catalogOptions = createMemo(() => Object.entries(catalog).map(([id, meta]) => ({ id, ...meta })))
+    // Older catalogs recorded this draft-owned App command as text only. Upgrade its source without requiring
+    // the user to visit a draft; leave plugin entries, explicit sources, and all binding metadata untouched.
+    createEffect(() => {
+      if (!catalogReady()) return
+      const item = catalog["session.location.select"]
+
+      if (!item || item.plugin || item.titleLabel) return
+      setCatalog("session.location.select", "titleLabel", { key: "session.location.worktree" })
+    })
+
+    const catalogOptions = createMemo(() =>
+      Object.entries(catalog).map(([id, meta]) => {
+        const label = meta.titleLabel
+
+        // SAFETY: `key` is persisted as a string. `Object.hasOwn` proves it is an app dictionary entry, and
+        // `language.t` returns undefined for a key it cannot resolve, so the stored title stays the fallback.
+        const title =
+          label && Object.hasOwn(en, label.key) ? language.t(label.key as TitleLabelKey, label.params) : undefined
+
+        return { id, ...meta, title: title ?? meta.title }
+      }),
+    )
 
     const options = createMemo(() => {
       const resolved = registered().map((opt) => ({

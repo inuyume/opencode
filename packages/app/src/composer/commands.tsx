@@ -110,6 +110,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     modelCommand({
       id: "model.choose",
       title: language.t("command.model.choose"),
+      titleLabel: { key: "command.model.choose" },
       description: language.t("command.model.choose.description"),
       keybind: "mod+'",
       slash: "model",
@@ -118,6 +119,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     modelCommand({
       id: "model.variant.cycle",
       title: language.t("command.model.variant.cycle"),
+      titleLabel: { key: "command.model.variant.cycle" },
       description: language.t("command.model.variant.cycle.description"),
       keybind: "shift+mod+d",
       onSelect: () => model.variant.cycle(),
@@ -125,12 +127,14 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     viewCommand({
       id: "usage.view",
       title: language.t("command.usage.view"),
+      titleLabel: { key: "command.usage.view" },
       description: language.t("command.usage.view.description"),
       onSelect: () => void viewUsage(),
     }),
     providerCommand({
       id: "provider.connect",
       title: language.t("command.provider.connect"),
+      titleLabel: { key: "command.provider.connect" },
       description: language.t("command.provider.connect.description"),
       slash: "connect",
       onSelect: connectProvider,
@@ -138,6 +142,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     serverCommand({
       id: "config.reload",
       title: language.t("command.config.reload"),
+      titleLabel: { key: "command.config.reload" },
       description: language.t("command.config.reload.description"),
       slash: "reload",
       onSelect: () => reloadConfig({ type: "reload.requested" }),
@@ -145,6 +150,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     agentCommand({
       id: "agent.cycle",
       title: language.t("command.agent.cycle"),
+      titleLabel: { key: "command.agent.cycle" },
       description: language.t("command.agent.cycle.description"),
       keybind: "mod+.",
       slash: "agent",
@@ -154,6 +160,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
     agentCommand({
       id: "agent.cycle.reverse",
       title: language.t("command.agent.cycle.reverse"),
+      titleLabel: { key: "command.agent.cycle.reverse" },
       description: language.t("command.agent.cycle.reverse.description"),
       keybind: "shift+mod+.",
       disabled: !local.agent.visible(),

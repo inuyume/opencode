@@ -6,7 +6,7 @@ import {
   openPaletteWorkspace,
   paletteSession,
 } from "../utils/command-palette"
-import { REMOTE_SERVER, SERVER } from "../utils/app"
+import { REMOTE_SERVER, SERVER, seed } from "../utils/app"
 import { mockRemoteServer, mockWorkspace } from "../utils/workspace"
 
 test.use({ serviceWorkers: "block", permissions: ["clipboard-read", "clipboard-write"] })
@@ -113,24 +113,35 @@ test("lists recent sessions before a query is entered", async ({ page }) => {
   await expect(page.getByRole("heading", { name: paletteSession.title, exact: true })).toBeVisible()
 })
 
-test("titlebar search lists recent sessions and opens the typed match", async ({ page }) => {
-  await openPaletteWorkspace(page, true)
-  await page.getByRole("banner").getByRole("button", { name: "Search sessions", exact: true }).click()
-  const dialog = page.getByRole("dialog")
-  const input = dialog.getByRole("combobox")
-  await expect(input).toBeFocused()
-  await expect(input).toHaveAttribute("placeholder", "Search sessions")
-  await expect(dialog.getByText("Recent sessions", { exact: true })).toBeVisible()
-  await expect(dialog.getByRole("option", { name: /Palette fixture session/ })).toHaveAttribute("aria-selected", "true")
-  // Session search lists sessions only, never commands.
-  await input.fill("settings")
-  await expect(dialog.getByText("No results found", { exact: true })).toBeVisible()
-  await input.fill("Palette fixture")
-  await expect(dialog.getByRole("option")).toHaveCount(1)
-  await input.press("Enter")
-  await expect(dialog).toHaveCount(0)
-  await expect(page.getByRole("heading", { name: paletteSession.title, exact: true })).toBeVisible()
-})
+for (const locale of [
+  { id: "en", lang: "en", search: "Search sessions", recent: "Recent sessions", empty: "No results found" },
+  { id: "zh", lang: "zh-Hans", search: "搜索会话", recent: "最近会话", empty: "未找到结果" },
+  { id: "zht", lang: "zh-Hant", search: "搜尋工作階段", recent: "最近工作階段", empty: "找不到結果" },
+]) {
+  test(`titlebar search lists recent sessions and opens the typed match (${locale.id})`, async ({ page }) => {
+    await seed(page, { locale: locale.id })
+    await openPaletteWorkspace(page)
+    await expect(page.locator("html")).toHaveAttribute("lang", locale.lang)
+    await page.getByRole("banner").getByRole("button", { name: locale.search, exact: true }).click()
+    const dialog = page.getByRole("dialog")
+    const input = dialog.getByRole("combobox")
+    await expect(input).toBeFocused()
+    await expect(input).toHaveAttribute("placeholder", locale.search)
+    await expect(dialog.getByText(locale.recent, { exact: true })).toBeVisible()
+    const session = dialog.getByRole("option", { name: /Palette fixture session/ })
+    await expect(session).toHaveAttribute("aria-selected", "true")
+    await expect(session).toContainText("command-palette")
+    // Session search lists sessions only, never commands or translated user data.
+    await input.fill("settings")
+    await expect(dialog.getByText(locale.empty, { exact: true })).toBeVisible()
+    await input.fill("Palette fixture")
+    await expect(dialog.getByRole("option")).toHaveCount(1)
+    await expect(session).toContainText(paletteSession.title)
+    await input.press("Enter")
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: paletteSession.title, exact: true })).toBeVisible()
+  })
+}
 
 test("titlebar search asks for one bounded result set after a pause in typing", async ({ page }) => {
   await openPaletteWorkspace(page, true)

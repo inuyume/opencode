@@ -23,6 +23,7 @@ import {
   type Entry,
 } from "@opencode/plugin/gui/host"
 import {
+  type Command,
   type Appearance,
   type App,
   type ComposerNote,
@@ -37,6 +38,7 @@ import {
   type PanelFrame,
   type Panel,
   type PanelTab,
+  type Registry,
   type Router,
   type Servers,
   type SessionRef,
@@ -675,6 +677,8 @@ type SideShortcuts = {
 /** The app's plugin host and side region, passed in by `packages/app/component-tests/browser-pane-restore.spec.ts`. */
 type RegionHost = {
   LanguageProvider: Component<{ locale: string; children: JSX.Element }>
+  /** The SDK tokens the fixture reads, so the page and this module share one instance. */
+  sdk: { readonly Command: Registry<Command> }
   PluginHostProvider: Component<
     ParentProps<{
       definitions: Accessor<readonly Entry[]>
@@ -686,7 +690,10 @@ type RegionHost = {
       ipc: (token: Ipc) => PaneClient | undefined
     }>
   >
-  usePluginHost(): { ready(): boolean }
+  usePluginHost(): {
+    ready(): boolean
+    items: <T>(registry: Registry<T>) => readonly { readonly plugin: string; readonly value: T }[]
+  }
   createRegion(input: {
     region: "side"
     view: Accessor<MountedSession>
@@ -1099,6 +1106,15 @@ export function mountBrowserRegion(input: RegionHost) {
 
       setSideRegion(() => region)
 
+      const host = input.usePluginHost()
+
+      const commands = () =>
+        host
+          .items(input.sdk.Command)
+          .filter((item) => item.plugin === "browser")
+          .map((item) => `${item.value.id}:${item.value.enabled === false ? "off" : "on"}`)
+          .join(" ")
+
       const browser = () => {
         const entry = region.entry(region.active() ?? "")
 
@@ -1123,6 +1139,7 @@ export function mountBrowserRegion(input: RegionHost) {
             </For>
           </div>
           <p data-testid="selected">{region.active() ?? "none"}</p>
+          <p data-testid="browser-commands">{commands()}</p>
           <p data-testid="side-new-tab">{region.newTab("side") ? "shown" : "none"}</p>
           <Show when={browser()}>
             {(entry) => (

@@ -123,6 +123,181 @@ test("a language switch keeps settings on screen and flips direction only with t
   await expect(html).toHaveAttribute("lang", "ar")
 })
 
+test("Chinese settings translate preferences and appearance and switch back to English", async ({ page }) => {
+  const { settings } = await open(page, {
+    seed: {
+      locale: "en",
+      settings: { keybinds: { "session.location.select": "ctrl+alt+w" } },
+      storage: {
+        "opencode.global.dat:command.catalog.v1": {
+          "session.location.select": { title: "Choose worktree", keybind: "mod+alt+o" },
+          "custom.worktree": { title: "Choose worktree", keybind: "alt+f9" },
+        },
+      },
+    },
+  })
+
+  for (const locale of [
+    {
+      name: "简体中文",
+      lang: "zh-Hans",
+      preferences: "偏好设置",
+      appearance: "外观",
+      shortcuts: "快捷键",
+      settingsOpen: "打开设置",
+      worktree: "选择工作树",
+      layout: "界面布局",
+      layoutDescription: "选择切换会话和查看运行中任务的方式",
+      motion: "减少动态效果",
+      motionDescription: "减少动画效果或跟随系统设置",
+    },
+    {
+      name: "繁體中文",
+      lang: "zh-Hant",
+      preferences: "偏好設定",
+      appearance: "外觀",
+      shortcuts: "快速鍵",
+      settingsOpen: "開啟設定",
+      worktree: "選擇工作樹",
+      layout: "介面版面配置",
+      layoutDescription: "選擇切換工作階段及掌握執行中工作的方式",
+      motion: "減少動態效果",
+      motionDescription: "減少動畫效果或依照系統設定",
+    },
+    {
+      name: "English",
+      lang: "en",
+      preferences: "Preferences",
+      appearance: "Appearance",
+      shortcuts: "Shortcuts",
+      settingsOpen: "Open settings",
+      worktree: "Choose worktree",
+      layout: "Interface layout",
+      layoutDescription: "Choose how you switch between sessions and keep track of what's running",
+      motion: "Reduce motion",
+      motionDescription: "Reduce animations or match your system",
+    },
+  ]) {
+    await settings.locator('[data-action="settings-language"]').click()
+    await page.getByRole("listbox").getByRole("option", { name: locale.name, exact: true }).click()
+    await expect(page.locator("html")).toHaveAttribute("lang", locale.lang)
+
+    const layout = settings
+      .locator('[data-component="settings-row"]')
+      .filter({ has: page.locator('[data-action="settings-tab-layout"]') })
+
+    await expect(layout.locator('[data-slot="settings-row-title"]')).toHaveText(locale.layout)
+    await expect(layout.locator('[data-slot="settings-row-description"]')).toHaveText(locale.layoutDescription)
+
+    await settings.getByRole("tab", { name: locale.appearance, exact: true }).click()
+
+    const motion = settings
+      .locator('[data-component="settings-row"]')
+      .filter({ has: page.locator('[data-action="settings-reduce-motion"]') })
+
+    await expect(motion.locator('[data-slot="settings-row-title"]')).toHaveText(locale.motion)
+    await expect(motion.locator('[data-slot="settings-row-description"]')).toHaveText(locale.motionDescription)
+
+    await settings.getByRole("tab", { name: locale.shortcuts, exact: true }).click()
+    const openSettings = settings.locator('[data-keybind-id="settings.open"]').locator("..").locator("..")
+    await expect(openSettings.getByText(locale.settingsOpen, { exact: true })).toBeVisible()
+    const worktree = settings.locator('[data-keybind-id="session.location.select"]')
+    await expect(worktree.locator("..").locator("..").getByText(locale.worktree, { exact: true })).toBeVisible()
+    await expect(worktree).toHaveText("Ctrl+Alt+W")
+    await expect(
+      settings
+        .locator('[data-keybind-id="custom.worktree"]')
+        .locator("..")
+        .locator("..")
+        .getByText("Choose worktree", { exact: true }),
+    ).toBeVisible()
+
+    await settings.getByRole("tab", { name: locale.preferences, exact: true }).click()
+    await expect(settings.locator('[data-action="settings-language"]')).toHaveText(locale.name)
+  }
+})
+
+test("route-scoped shortcut titles follow the language after leaving a session", async ({ page }) => {
+  await openSession(page, {
+    name: "Shortcut language",
+    seed: { locale: "en", settings: { keybinds: { "session.undo": "ctrl+alt+u" } } },
+  })
+
+  await page.keyboard.press("Control+,")
+  const settings = page.getByTestId("settings-screen")
+  await expect(settings).toBeFocused()
+  await settings.getByRole("tab", { name: "Shortcuts", exact: true }).click()
+
+  const undo = settings.locator('[data-keybind-id="session.undo"]').locator("..").locator("..")
+  const customBinding = settings.locator('[data-keybind-id="session.undo"]')
+  await expect(undo.getByText("Undo", { exact: true })).toBeVisible()
+  await expect(customBinding).toHaveText("Ctrl+Alt+U")
+
+  await settings.getByRole("tab", { name: "Preferences", exact: true }).click()
+
+  for (const locale of [
+    {
+      name: "简体中文",
+      lang: "zh-Hans",
+      preferences: "偏好设置",
+      shortcuts: "快捷键",
+      undo: "撤销",
+      rename: "重命名会话",
+      review: "打开审查",
+      browser: "打开浏览器",
+      details: "切换摘要",
+    },
+    {
+      name: "繁體中文",
+      lang: "zh-Hant",
+      preferences: "偏好設定",
+      shortcuts: "快速鍵",
+      undo: "復原",
+      rename: "重新命名工作階段",
+      review: "開啟檢閱",
+      browser: "開啟瀏覽器",
+      details: "切換摘要",
+    },
+    {
+      name: "English",
+      lang: "en",
+      preferences: "Preferences",
+      shortcuts: "Shortcuts",
+      undo: "Undo",
+      rename: "Rename session",
+      review: "Open review",
+      browser: "Open browser",
+      details: "Toggle session details",
+    },
+  ]) {
+    await settings.locator('[data-action="settings-language"]').click()
+    await page.getByRole("listbox").getByRole("option", { name: locale.name, exact: true }).click()
+    await expect(page.locator("html")).toHaveAttribute("lang", locale.lang)
+
+    await settings.getByRole("tab", { name: locale.shortcuts, exact: true }).click()
+
+    for (const [id, title] of Object.entries({
+      "session.undo": locale.undo,
+      "session.rename": locale.rename,
+      "review.open": locale.review,
+      "browser.open": locale.browser,
+      "details.toggle": locale.details,
+    })) {
+      const row = settings.locator(`[data-keybind-id="${id}"]`).locator("..").locator("..")
+      await expect(row.getByText(title, { exact: true })).toBeVisible()
+    }
+
+    await expect(customBinding).toHaveText("Ctrl+Alt+U")
+    await settings.getByRole("tab", { name: locale.preferences, exact: true }).click()
+  }
+
+  // The browser command is remembered but disabled without a session, so its shortcut does nothing here.
+  await page.keyboard.press("Control+Alt+B")
+  await expect(page).toHaveURL(/\/settings/)
+  await expect(page.locator("#browser-panel")).toHaveCount(0)
+  await expect(settings).toBeVisible()
+})
+
 test("a language whose chunk fails to load keeps English and says so", async ({ page }) => {
   await page.route(arabic, (route) => route.abort("failed"))
   const settings = await pickArabic(page)

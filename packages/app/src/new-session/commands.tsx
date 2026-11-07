@@ -35,6 +35,7 @@ export function useNewSessionCommands(input: {
     {
       id: "input.focus",
       title: language.t("command.input.focus"),
+      titleLabel: { key: "command.input.focus" },
       category: language.t("command.category.view"),
       keybind: "ctrl+l",
       onSelect: input.restoreFocus,
@@ -42,6 +43,7 @@ export function useNewSessionCommands(input: {
     {
       id: "session.location.cycle",
       title: language.t("command.session.location.cycle"),
+      titleLabel: { key: "command.session.location.cycle" },
       category: language.t("command.category.workspace"),
       keybind: "mod+alt+l",
       disabled: !input.workspace.enabled(),
@@ -53,6 +55,7 @@ export function useNewSessionCommands(input: {
     {
       ...projectSearchCommand,
       title: language.t("session.new.project.search"),
+      titleLabel: { key: "session.new.project.search" },
       category: language.t("command.category.project"),
       disabled: input.project.empty(),
       onSelect: input.project.open,

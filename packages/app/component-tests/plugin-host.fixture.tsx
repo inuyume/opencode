@@ -359,6 +359,8 @@ export function mountPlugins(input: {
     status: (id: string) => hosts[0]?.status(id),
     failure: (id: string) => hosts[0]?.failure(id),
     entries: (registry: string) => hosts[0]?.state.entries[registry]?.length ?? 0,
+    /** The items a registry holds now, as the host publishes them. */
+    items: (registry: Parameters<PluginHost["items"]>[0]) => hosts[0]?.items(registry) ?? [],
     /** Errors that reached the error boundary above the host. */
     escaped: () => [...escaped],
   }

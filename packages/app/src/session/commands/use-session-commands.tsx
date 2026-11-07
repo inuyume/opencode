@@ -446,12 +446,14 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.new",
       title: language.t("command.session.new"),
+      titleLabel: { key: "command.session.new" },
       slash: "new",
       onSelect: (source) => command.trigger("tab.new", source),
     }),
     sessionCommand({
       id: "session.undo",
       title: language.t("command.session.undo"),
+      titleLabel: { key: "command.session.undo" },
       description: language.t("command.session.undo.description"),
       slash: "undo",
       disabled: !actions.revert.canUndo(),
@@ -460,6 +462,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.redo",
       title: language.t("command.session.redo"),
+      titleLabel: { key: "command.session.redo" },
       description: language.t("command.session.redo.description"),
       slash: "redo",
       disabled: !actions.revert.canRedo(),
@@ -468,6 +471,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.compact",
       title: language.t("command.session.compact"),
+      titleLabel: { key: "command.session.compact" },
       description: language.t("command.session.compact.description"),
       slash: "compact",
       disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
@@ -476,6 +480,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.background",
       title: language.t("command.session.background"),
+      titleLabel: { key: "command.session.background" },
       keybind: "ctrl+b",
       disabled: !actions.background.blocking(),
       onSelect: actions.background.move,
@@ -483,6 +488,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.fork",
       title: language.t("command.session.fork"),
+      titleLabel: { key: "command.session.fork" },
       description: language.t("command.session.fork.description"),
       slash: "fork",
       disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
@@ -491,6 +497,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.export",
       title: language.t("command.session.export"),
+      titleLabel: { key: "command.session.export" },
       description: language.t("command.session.export.description"),
       slash: "export",
       disabled:
@@ -501,6 +508,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.copyID",
       title: language.t("command.session.copyID"),
+      titleLabel: { key: "command.session.copyID" },
       disabled: !actions.session.identity.params.id,
       onSelect: copySessionID,
     }),
@@ -515,6 +523,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       fileCommand({
         id: "file.open",
         title: language.t("command.file.open"),
+        titleLabel: { key: "command.file.open" },
         description: language.t("palette.search.placeholder"),
         keybind: "mod+p",
         slash: "open",
@@ -523,6 +532,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       fileCommand({
         id: "file.close",
         title: language.t("command.tab.close"),
+        titleLabel: { key: "command.tab.close" },
         keybind: "mod+w",
         follows: "tab.close",
         hidden: !tab,
@@ -589,6 +599,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     projectCommand({
       id: "project.copyID",
       title: language.t("command.project.copyID"),
+      titleLabel: { key: "command.project.copyID" },
       disabled: !actions.session.data.info()?.projectID,
       onSelect: copyProjectID,
     }),
@@ -598,6 +609,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     contextCommand({
       id: "context.addSelection",
       title: language.t("command.context.addSelection"),
+      titleLabel: { key: "command.context.addSelection" },
       description: language.t("command.context.addSelection.description"),
       keybind: "mod+shift+l",
       disabled: !canAddSelectionContext(),
@@ -609,6 +621,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     viewCommand({
       id: "review.toggle",
       title: language.t("command.review.toggle"),
+      titleLabel: { key: "command.review.toggle" },
       keybind: "mod+shift+r",
       onSelect: actions.region.toggle,
     }),
@@ -617,6 +630,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           viewCommand({
             id: "bottom.toggle",
             title: language.t("command.bottom.toggle"),
+            titleLabel: { key: "command.bottom.toggle" },
             keybind: "mod+j",
             onSelect: () => {
               const bottom = actions.session.layout.view().bottom
@@ -628,6 +642,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     viewCommand({
       id: "input.focus",
       title: language.t("command.input.focus"),
+      titleLabel: { key: "command.input.focus" },
       keybind: "ctrl+l",
       onSelect: focusInput,
     }),
@@ -637,6 +652,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "message.previous",
       title: language.t("command.message.previous"),
+      titleLabel: { key: "command.message.previous" },
       description: language.t("command.message.previous.description"),
       keybind: "mod+alt+[",
       disabled: !actions.session.identity.params.id,
@@ -645,6 +661,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "message.next",
       title: language.t("command.message.next"),
+      titleLabel: { key: "command.message.next" },
       description: language.t("command.message.next.description"),
       keybind: "mod+alt+]",
       disabled: !actions.session.identity.params.id,
@@ -656,6 +673,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     mcpCommand({
       id: "mcp.toggle",
       title: language.t("command.mcp.toggle"),
+      titleLabel: { key: "command.mcp.toggle" },
       description: language.t("command.mcp.toggle.description"),
       keybind: "mod+;",
       slash: "mcp",
@@ -663,14 +681,19 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     }),
   ]
 
+  // The stored label is the semantic choice made here, not a guess at an unmounted session's later state.
+  const autoAcceptTitle = () =>
+    autoAccepting()
+      ? ("command.permissions.autoaccept.disable" as const)
+      : sessionProject()
+        ? ("command.permissions.autoaccept.project" as const)
+        : ("command.permissions.autoaccept.enable" as const)
+
   const permissionsCmds = () => [
     permissionsCommand({
       id: "permissions.autoaccept",
-      title: autoAccepting()
-        ? language.t("command.permissions.autoaccept.disable")
-        : sessionProject()
-          ? language.t("command.permissions.autoaccept.project")
-          : language.t("command.permissions.autoaccept.enable"),
+      title: language.t(autoAcceptTitle()),
+      titleLabel: { key: autoAcceptTitle() },
       keybind: "mod+shift+a",
       disabled: false,
       onSelect: toggleAutoAccept,

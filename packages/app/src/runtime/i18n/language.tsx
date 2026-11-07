@@ -65,6 +65,9 @@ type TranslationKey<Key extends Extract<keyof Dictionary, string>> = Key extends
   ? never
   : Key
 
+/** An app dictionary key that `t` accepts, excluding plural category variants. */
+export type AppTranslationKey = TranslationKey<AppI18nKey>
+
 type Source = { dict: Record<string, string> }
 
 export function richTemplateParts<Value>(template: string, params: Record<string, Value>) {

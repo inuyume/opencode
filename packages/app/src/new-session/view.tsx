@@ -294,6 +294,7 @@ function NewSessionLocation(props: {
     {
       id: "session.location.select",
       title: language.t("session.location.worktree"),
+      titleLabel: { key: "session.location.worktree" },
       category: language.t("command.category.workspace"),
       keybind: "mod+alt+o",
       disabled: !props.onWorktree,

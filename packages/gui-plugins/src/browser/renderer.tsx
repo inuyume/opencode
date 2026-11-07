@@ -39,10 +39,9 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   const mac = /(Mac|iPhone|iPad)/.test(navigator.platform)
   // Settings > Shortcuts lists the command on every platform; it stays disabled until the pane can open. Bound like
   // Review's and Open file's launchers, since the sidebar owns mod+shift+b and mod+t opens a tab inside the pane.
-  ctx.add(Command, (): Command | undefined => {
+  // Contributed continuously, so a language change refreshes its remembered title while no session is routed.
+  ctx.add(Command, (): Command => {
     const view = sessions.current()
-
-    if (!view) return undefined
     const value = model()
 
     return {
@@ -51,8 +50,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
       group: ctx.t("command.category.view"),
       bind: mac ? "ctrl+meta+b" : "ctrl+alt+b",
       editable: true,
-      enabled: !!value?.available(view),
-      run: () => value?.open(view),
+      enabled: !!view && !!value?.available(view),
+      run: () => {
+        const current = sessions.current()
+
+        if (current) model()?.open(current)
+      },
     }
   })
 
@@ -108,10 +111,10 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     openFile: (session, path) => model()?.openFile(session, path),
   })
 
-  ctx.add(Command, (): Command | undefined => {
+  // Contributed continuously while the desktop is active, so Settings > Shortcuts can refresh its title even when
+  // no pane is mounted; it stays disabled until the current pane can reload.
+  ctx.add(Command, (): Command => {
     const pane = model()?.pane()
-
-    if (!pane) return undefined
 
     return {
       id: "reload",
@@ -119,8 +122,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
       group: ctx.t("command.category.view"),
       bind: "f5",
       editable: true,
-      enabled: pane.visible() && !!pane.address(),
-      run: pane.reload,
+      enabled: !!pane && pane.visible() && !!pane.address(),
+      run: () => {
+        const current = model()?.pane()
+
+        if (current?.visible() && current.address()) current.reload()
+      },
     }
   })
 
@@ -146,10 +153,8 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
 
   // The system browser's address shortcut, in the pane and, forwarded like mod+t and mod+w, from a page with focus.
   // Ctrl+L focuses the composer outside the pane on Windows and Linux.
-  ctx.add(Command, (): Command | undefined => {
+  ctx.add(Command, (): Command => {
     const pane = model()?.pane()
-
-    if (!pane) return undefined
 
     return {
       id: "address",
@@ -158,8 +163,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
       bind: "mod+l",
       scope: "#browser-panel",
       editable: true,
-      enabled: pane.visible(),
-      run: pane.focusAddress,
+      enabled: !!pane && pane.visible(),
+      run: () => {
+        const current = model()?.pane()
+
+        if (current?.visible()) current.focusAddress()
+      },
     }
   })
 
@@ -206,10 +215,8 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
 
   // Chromium's element picker chord. While the page has focus, the page claims it itself; here it covers focus elsewhere
   // in the pane. Ctrl+Shift+C copies in the terminal outside the pane.
-  ctx.add(Command, (): Command | undefined => {
+  ctx.add(Command, (): Command => {
     const pane = model()?.pane()
-
-    if (!pane) return undefined
 
     return {
       id: "inspect",
@@ -218,8 +225,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
       bind: "mod+shift+c",
       scope: "#browser-panel",
       editable: true,
-      enabled: pane.visible() && pane.inspectable(),
-      run: pane.inspect,
+      enabled: !!pane && pane.visible() && pane.inspectable(),
+      run: () => {
+        const current = model()?.pane()
+
+        if (current?.visible() && current.inspectable()) current.inspect()
+      },
     }
   })
 
